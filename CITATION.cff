@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software for any publications, please cite it as below."
+authors:
+- family-names: "Anderson"
+  given-names: "Brandon"
+  orcid: "https://orcid.org/0000-0001-6502-9216"
+title: "Semiautomated OCT thickness analysis"
+version: 2.2
+doi: 
+date-released: 2023-03-23
+url: "https://github.com/banderson314/OCT_thickness_analysis"

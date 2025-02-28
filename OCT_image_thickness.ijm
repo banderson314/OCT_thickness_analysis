@@ -1,13 +1,3 @@
-//OCT image thickness analysis macro
-//Made by Brandon Anderson
-//Last updated: March 23, 2023
-//Version 2.2
-
-//Image name requirements:
-//Must start out with mouse number (doesn't have to be number) followed by either "_OD" or "_OS"
-//Name must also include one of the following: "horizontal" or "vertical" if they are central images or "superior", "inferior", "temporal", or "nasal"
-
-
 var count = 0;  //this is for the 's' key macro
 
 var xLine1 = newArray("nothing");
