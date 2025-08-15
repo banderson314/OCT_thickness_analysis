@@ -219,6 +219,7 @@ macro "Record line [s]" {
 
 
     ID = getTitle();
+	ID = toLowerCase(ID);
 
     if (indexOf(ID, "inferior") >= 0) {   //Determining if optic nerve on right side
       opticNerveSide = "right";
@@ -282,6 +283,7 @@ macro "Record line [s]" {
       }
     }
 
+	ID = getTitle();
 
     if (indexOf(ID, "OD") >= 0) {    //Figuring out what eye this is
       eye = "OD";
