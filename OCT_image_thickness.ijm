@@ -1,616 +1,643 @@
-var count = 0;  //this is for the 's' key macro
+// ===============================================================================
+// vvvv Edit the below variables if you want to change the default settings vvvv
+// ===============================================================================
+var reportAllMeasurements = true;
+var processTotalAverage = true;
+var drawMeasurementLines = true;
+var distanceBetweenLines = 2;
+var processSpidergraphData = true;
+var drawSpiderGraphLines = true;
+var spiderGraphLineDistance = 50;
+var saveLinesWhenOpenNewImage = false;
+var pixelToMicronConversion = 2.19;
+var boundaryAroundOpticNerve = 30;
+var forceMeasureBothSides = false;
+// ===============================================================================
+// ^^^^ Edit the above variables if you want to change the default settings ^^^^
+// ===============================================================================
 
+// ===================================
+// Global variables not edited by user
+// ===================================
+var count = 0;
 var xLine1 = newArray("nothing");
 var yLine1 = newArray("nothing");
 var xLine2 = newArray("nothing");
 var yLine2 = newArray("nothing");
-
-var mouseNumberArray = newArray();
-var eyeArray = newArray();
-var locationArray = newArray();
+var xLineLocation = newArray("nothing");
+var yLineLocation = newArray("nothing");
 var thickness = newArray();
-
-var spiderGraph_mouseNumberArray = newArray();
-var spiderGraph_eyeArray = newArray();
-var spiderGraph_locationArray = newArray();
+var reverseSpiderGraph = false;
 var spiderGraph_thickness = newArray();
 var spiderGraph_distanceFromOpticNerve = newArray();
 
-var averagedResultsMouseNumber = newArray();  //these variables are for the averaged thickness table
-var averagedResultsEye = newArray();
-var averagedResultsLocation = newArray();
-var averagedResultsThickness = newArray();
+// =========================================
+// Initiating settings when first installed
+// =========================================
+macro "AutoRunAndHide" {
+	setTool("line");
+	doCommand("Set parameters [1]");
+	print("\\Clear");
+	print("Welcome to OCT_image_thickness.ijm!");
+	print("\nIf you use this macro to publish data, please cite it:\nAnderson, B. (2023). Semiautomated OCT thickness analysis (Version 2.2) [Computer software]. https://doi.org/10.5281/zenodo.14947742");
+	
+	print("\\Update6:To get started, use the line tool to mark the first border of interest.")
+	print("\\Update8:CONTROLS");
+	print("\\Update9:[a] Adjust line shape");
+	print("\\Update10:[s] Submit line");
+	print("\\Update11:[w] Redo the image");
+	print("\\Update12:[1] Change parameters");
+}
 
-var distanceBetweenLines = 2;     //options that the dialog box [1] gives you
-var processTotalAverage = true;
-var reportAllMeasurements = true;
-var processSpidergraphData = true;
-var spiderGraphLineDistance = 50;
-var spiderGraphNumberOfLines = 12;
-var drawMeasurementLines = false;
-var saveLinesWhenOpenNewImage = false;
-var drawSpiderGraphLines = false;
-var pixelToMicronConversion = 2.19;
-
-
-
+// ================================
+// Settings for the user to change
+// ================================
 macro "Set parameters [1]" {
-  distanceBetweenLines = abs(distanceBetweenLines);
-  spiderGraphLineDistance = abs(spiderGraphLineDistance);
+	distanceBetweenLines = abs(distanceBetweenLines);
+	spiderGraphLineDistance = abs(spiderGraphLineDistance);
 
-  Dialog.create("Set measurement parameters");
-  Dialog.addCheckbox("Draw measurement lines", drawMeasurementLines);
-  Dialog.addCheckbox("Save lines when you press 'd'?", saveLinesWhenOpenNewImage);
-  Dialog.addMessage("");
-  Dialog.addCheckbox("Output all individual measurements", reportAllMeasurements);
-  Dialog.addCheckbox("Output average of all measurements", processTotalAverage);
-  Dialog.addNumber("Distance between measurements for total average: ", distanceBetweenLines, 0, 8, "pixels");
-  Dialog.addMessage("");
-  Dialog.addCheckbox("Output processed spider graph data", processSpidergraphData);
-  Dialog.addCheckbox("Draw spidergraph lines", drawSpiderGraphLines);
-  Dialog.addNumber("Distance between measurements for spider graph: ", spiderGraphLineDistance, 0, 8, "pixels");
-  Dialog.addNumber("Number of lines in spidergraph measurements:       ", spiderGraphNumberOfLines);
-  //Dialog.addMessage("Assuming the image is 640 pixels wide and you are analyzing\nmouse OCT images, 1 pixel = 2.19 microns approximately");
-  Dialog.addNumber("On the horizontal axis, 1 pixel =                                      ", pixelToMicronConversion, 4, 8, "microns");
+	Dialog.create("Set Measurement Parameters");
 
+	Dialog.setInsets(5, 20, 0);
+	Dialog.addMessage("Average Measurements", 16);
+	Dialog.setInsets(0, 20, 0);
+	Dialog.addCheckbox("Output individual measurements", reportAllMeasurements);
+	Dialog.addCheckbox("Output overall average", processTotalAverage);
+	Dialog.addCheckbox("Draw measurement lines", drawMeasurementLines);
+	Dialog.addNumber("Distance between measurements:", distanceBetweenLines, 0, 8, "pixels");
 
+	Dialog.addMessage("Spidergraph Measurements", 16);
+	Dialog.addCheckbox("Output spidergraph data", processSpidergraphData);
+	Dialog.addCheckbox("Draw measurement lines", drawSpiderGraphLines);
+	Dialog.addNumber("Distance between measurements:", spiderGraphLineDistance, 0, 8, "pixels");
 
-  Dialog.show();
+	Dialog.addMessage("General Settings", 16);
+	Dialog.addCheckbox("Save lines when opening a new image with [d]", saveLinesWhenOpenNewImage);
+	Dialog.addCheckbox("Always measure both sides of the optic nerve", forceMeasureBothSides);
+	Dialog.addNumber("Horizontal scale: 1 pixel =", pixelToMicronConversion, 2, 8, "microns");
+	Dialog.addNumber("Exclusion distance around the optic nerve:", boundaryAroundOpticNerve, 0, 8, "pixels");
 
-  drawMeasurementLines = Dialog.getCheckbox();
-  saveLinesWhenOpenNewImage = Dialog.getCheckbox();
-  reportAllMeasurements = Dialog.getCheckbox();
-  processTotalAverage = Dialog.getCheckbox();
-  distanceBetweenLines = Dialog.getNumber();
-  processSpidergraphData = Dialog.getCheckbox();
-  drawSpiderGraphLines = Dialog.getCheckbox();
-  spiderGraphLineDistance = Dialog.getNumber();
-  spiderGraphNumberOfLines = Dialog.getNumber();
-  pixelToMicronConversion = Dialog.getNumber();
+	Dialog.show();
+
+	reportAllMeasurements = Dialog.getCheckbox();
+	processTotalAverage = Dialog.getCheckbox();
+	drawMeasurementLines = Dialog.getCheckbox();
+	distanceBetweenLines = Dialog.getNumber();
+	processSpidergraphData = Dialog.getCheckbox();
+	drawSpiderGraphLines = Dialog.getCheckbox();
+	spiderGraphLineDistance = Dialog.getNumber();
+	saveLinesWhenOpenNewImage = Dialog.getCheckbox();
+	forceMeasureBothSides = Dialog.getCheckbox();
+	pixelToMicronConversion = Dialog.getNumber();
+	boundaryAroundOpticNerve = Dialog.getNumber();
 }
 
 
-
-
+// ==================================================
+// Close and reopen current image, resetting progress
+// ==================================================
 macro "Redo image [w]" {
-  imageDirectory = File.directory;
-  imageTitle = getTitle();
-  close();
-  count = 0;
-  open(imageDirectory + imageTitle);
+	getLocationAndSize(x, y, width, height);
+	imageDirectory = File.directory;
+	imageTitle = getTitle();
+	close();
+	count = 0;
+	open(imageDirectory + imageTitle);
+	setLocation(x, y, width, height);
+	reportProgress();
 }
 
-macro "Undo last line [z]" {
-  count = count - 1;
-  if (count < 0)
-    count = 0;
+
+// =============================================
+// Helper function to report on user's progress
+// =============================================
+function reportProgress() {
+	print("\\Update0:CURRENT PROGRESS");
+	print("\\Update2:");
+	print("\\Update3:CURRENT IMAGE");
+	print("\\Update7:");
+	print("\\Update8:CONTROLS");
+	print("\\Update11:[w] Redo the image");
+	print("\\Update12:[1] Change parameters");
+
+	if (count == 0){
+		ID = getTitle();
+		ID = toLowerCase(ID);
+		if (indexOf(ID, "od")>=0 && indexOf(ID, "os")>=0)
+			eye = "unknown";
+		else if (indexOf(ID, "od")>=0)
+			eye = "OD";
+		else if (indexOf(ID, "os")>=0)
+			eye = "OS";
+		else
+			eye = "unknown";
+		if (indexOf(ID, "horizontal")>=0 || indexOf(ID, "temporal")>=0 || indexOf(ID, "nasal")>=0)
+			position = "horizontal";
+		else if (indexOf(ID, "vertical")>=0 || indexOf(ID, "inferior")>=0 || indexOf(ID, "superior")>=0)
+			position = "vertical";
+		else
+			position = "unknown";
+
+		print("\\Update1:Lines submitted: 0");
+		print("\\Update4:Eye: " + eye);
+		print("\\Update5:Position: " + position);
+		if (eye == "OS" && position == "horizontal") {
+			print("\\Update6:Spider graph flipped to match OD orientation");
+			reverseSpiderGraph = true;
+		} else {
+			print("\\Update6:");
+			reverseSpiderGraph = false;
+		}
+
+		print("\\Update9:[a] Adjust line shape");
+		print("\\Update10:[s] Submit line");
+	}
+
+	else if (count ==1){
+		print("\\Update1:Lines submitted: 1");
+	}
+	else if (count == 2) {
+		print("\\Update1:Lines submitted: 2");
+		print("\\Update9:[s] Submit line to indicate optic nerve");
+		print("\\Update10:Note that only the first point you make with the line will matter");
+	}
+	else if (count ==3) {
+		print("\\Update1:Analysis complete");
+		print("\\Update9:[d] Open next image in the folder");
+		print("\\Update10:[w] Redo the image");
+		print("\\Update11:[1] Change parameters");
+		print("\\Update12:");
+	}
+
 }
 
-function list(a) {
-    for (i=0; i<a.length; i++)
-        print(a[i]);
-
-}
-
-setTool("line");
-
-
-var xLineLocation = newArray("nothing");
-var yLineLocation = newArray("nothing");
-
+// =======================================================
+// User ability to create splines to change shape of line
+// =======================================================
 macro "Make spline [a]" {
-  if (xLineLocation[0] == "nothing") {
-    Roi.getCoordinates(x,y);
-    getCursorLoc(x2, y2, z2, flags);
+	reportProgress();
+	if (xLineLocation[0] == "nothing") {
+		Roi.getCoordinates(x,y);
+		getCursorLoc(x2, y2, z2, flags);
 
-    xLineLocation = Array.concat(x[0], x2, x[1]);
-    yLineLocation = Array.concat(y[0], y2, y[1]);
+		xLineLocation = Array.concat(x[0], x2, x[1]);
+		yLineLocation = Array.concat(y[0], y2, y[1]);
 
-    Roi.setPolylineSplineAnchors(xLineLocation, yLineLocation);
-  } else {
-    Roi.getSplineAnchors(x, y);   //this first part checks to see if you adjusted points manually and changes it's coordinates if you did
-    xLineLocation = newArray();
-    yLineLocation = newArray();
-    for (i = 0; i < x.length; i++) {
-      xLineLocation = Array.concat(xLineLocation, x[i]);
-      yLineLocation = Array.concat(yLineLocation, y[i]);
-    }
+		Roi.setPolylineSplineAnchors(xLineLocation, yLineLocation);
+	} else {
+		Roi.getSplineAnchors(x, y);   //this first part checks to see if you adjusted points manually and changes it's coordinates if you did
+		xLineLocation = newArray();
+		yLineLocation = newArray();
+		for (i = 0; i < x.length; i++) {
+			xLineLocation = Array.concat(xLineLocation, x[i]); 
+			yLineLocation = Array.concat(yLineLocation, y[i]);
+		}
 
-    getCursorLoc(x3, y3, z3, flags);
+		getCursorLoc(x3, y3, z3, flags);
 
-    xLineLocation = Array.concat(xLineLocation, x3); //adding a point wherever your cursor is
-    yLineLocation = Array.concat(yLineLocation, y3);
+		xLineLocation = Array.concat(xLineLocation, x3); //adding a point wherever your cursor is
+		yLineLocation = Array.concat(yLineLocation, y3);
 
-    Array.sort(xLineLocation, yLineLocation);   //making sure the line goes from left to right
+		Array.sort(xLineLocation, yLineLocation);   //making sure the line goes from left to right
 
-    Roi.setPolylineSplineAnchors(xLineLocation, yLineLocation);
-  }
+		Roi.setPolylineSplineAnchors(xLineLocation, yLineLocation);
+	}
 }
 
 
-
+// ==============================================
+// Helper function to see if an array has a value
+// ===============================================
 function contains(array, value) {
-    for (i=0; i<array.length; i++)
-      if (array[i] == value) return true;
-    return false;
+	for (i=0; i<array.length; i++)
+	  if (array[i] == value) return true;
+	return false;
 }
 
 
-
-
-
+// ======================================================================
+// User submits a line - changes what it does depending on count variable
+// ======================================================================
 macro "Record line [s]" {
-  if (count == 0) {     //The first time you call up this macro
-    count = 1;
-    Roi.getCoordinates(x, y);
-
-    xShortened = newArray();
-    yShortened = newArray();
-
-    for (i = 0; i < x.length; i++) {    //Getting rid of repeat x values
-      if (contains(xShortened, round(x[i])) == true) {
-        continue;
-      } else {
-        xShortened = Array.concat(xShortened, round(x[i]));
-        yShortened = Array.concat(yShortened, round(y[i]));
-      }
-    }
-
-    xComplete = newArray();
-    yComplete = newArray();
-
-
-    xLine1 = xShortened;    //Applying it to the global variable
-    yLine1 = yShortened;
-
-    if(drawMeasurementLines == true) {    //Making a permanent line on image, if selected
-      run("RGB Color");
-      setForegroundColor(0, 255, 0);
-      run("Draw");
-    }
-
-    run("Select None");     //removing the ROI line
-    var xLineLocation = newArray("nothing");
-    var yLineLocation = newArray("nothing");
-
-    exit;
-  }
-
-
-
-  if (count == 1) {     //The second time you call up this macro
-    count = 2;
-    Roi.getCoordinates(x, y);
-
-    xShortened = newArray();
-    yShortened = newArray();
-
-    for (i = 0; i < x.length; i++) {    //Getting rid of repeat x values
-      if (contains(xShortened, round(x[i])) == true) {
-        continue;
-      } else {
-        xShortened = Array.concat(xShortened, round(x[i]));
-        yShortened = Array.concat(yShortened, round(y[i]));
-      }
-    }
-
-    xLine2 = xShortened;    //Applying it to the global variable
-    yLine2 = yShortened;
-
-    if(drawMeasurementLines == true) {
-      run("RGB Color");   //making a line where you put it
-      setForegroundColor(0, 255, 0);
-      run("Draw");
-    }
-
-    run("Select None");     //removing the line
-    var xLineLocation = newArray("nothing");
-    var yLineLocation = newArray("nothing");
-    exit;
-  }
-
-
-
-  if (count == 2) {   //The third time you call up this macro
-    count = 0;
-    Roi.getCoordinates(x, y);
-    opticNerveLocation = x[0];
-    x1 = round(opticNerveLocation);
-
-
-    ID = getTitle();
-	ID = toLowerCase(ID);
-
-    if (indexOf(ID, "inferior") >= 0) {   //Determining if optic nerve on right side
-      opticNerveSide = "right";
-      location = "inferior";
-    }
-    if (indexOf(ID, "temporal") >= 0 && indexOf(ID, "OD") >= 0) {
-      opticNerveSide = "right";
-      location = "temporal";
-    }
-    if (indexOf(ID, "nasal") >= 0 && indexOf(ID, "OS") >= 0) {
-      opticNerveSide = "right";
-      location = "nasal";
-    }
-
-    if (indexOf(ID, "superior") >= 0) {         //Determining if optic nerve on left side
-      opticNerveSide = "left";
-      location = "superior";
-    }
-    if (indexOf(ID, "temporal") >= 0 && indexOf(ID, "OS") >= 0) {
-      opticNerveSide = "left";
-      location = "temporal";
-    }
-    if (indexOf(ID, "nasal") >= 0 && indexOf(ID, "OD") >= 0) {
-      opticNerveSide = "left";
-      location = "nasal";
-    }
-
-
-    if (indexOf(ID, "horizontal") >= 0){    //Determining if optic nerve is in the center
-      opticNerveSide = "central";
-      location = "horizontal";
-    }
-
-    if (indexOf(ID, "vertical") >= 0){
-      opticNerveSide = "central";
-      location = "vertical";
-    }
-
-
-    if (opticNerveSide == "right") {
-      distanceBetweenLines = -1 * abs(distanceBetweenLines);     //Adjusting if the lines go to the left or the right
-      spiderGraphLineDistance = -1 * abs(spiderGraphLineDistance);
-      if (distanceBetweenLines > -30) {      //making sure the measurements don't start in the optic nerve
-        x1 = x1 - 30;
-      }
-    }
-
-    if (opticNerveSide == "left") {
-      distanceBetweenLines = abs(distanceBetweenLines);
-      spiderGraphLineDistance = abs(spiderGraphLineDistance);
-      if (distanceBetweenLines < 30) {      //making sure the measurements don't start in the optic nerve
-        x1 = x1 + 30;
-      }
-    }
-
-    if (opticNerveSide == "central") {
-      distanceBetweenLines = abs(distanceBetweenLines);
-      spiderGraphLineDistance = abs(spiderGraphLineDistance);
-      if (distanceBetweenLines < 30) {      //making sure the measurements don't start in the optic nerve
-        x1 = x1 + 30;
-      }
-    }
-
-	ID = getTitle();
-
-    if (indexOf(ID, "OD") >= 0) {    //Figuring out what eye this is
-      eye = "OD";
-    }
-    else if (indexOf(ID, "OS") >= 0) {
-      eye = "OS";
-    }
-    else {eye = "?";}
-
-    mouseNumber = substring(ID, 0, indexOf(ID, "_O"));  //Determining mouse, which should be the beginning of the title right before _OD or _OS
-
-
-    mouseNumberArray = newArray();    //Uncomment this section if you want the result table to refresh with each image
-    eyeArray = newArray();
-    locationArray = newArray();
-    distanceFromOpticNerve = newArray();
-    thickness = newArray();
-
-
-    while (x1 < 680 && x1 > -40) {      //While it is within the image. I want to have the loop go longer than the image
-                                        //boundaries so that it will work for central images. It won't actually record past the image.
-      x1 = x1 + distanceBetweenLines;
-
-      if (opticNerveSide == "central" && x1 > 640) {   //going to the left in central images after it did the right side
-          x1 = opticNerveLocation;
-          distanceBetweenLines = -1 * abs(distanceBetweenLines);
-          if (abs(distanceBetweenLines) < 30) {      //making sure the measurements don't start in the optic nerve
-            x1 = x1 - 30;
-          }
-          x1 = x1 + distanceBetweenLines;
-      }
-
-
-      if (x1 > 640)   //If the line goes past the image, then it won't record
-        continue;
-
-      if (x1 < 0)
-        continue;
-
-      for (j = 0; j < xLine1.length; j++) {
-        if (x1-5 == xLine1[j])  //if the x value isn't in the array, then it'll get close to it
-          y1 = yLine1[j];
-        if (x1-4 == xLine1[j])
-          y1 = yLine1[j];
-        if (x1-3 == xLine1[j])
-          y1 = yLine1[j];
-        if (x1-2 == xLine1[j])
-          y1 = yLine1[j];
-        if (x1-1 == xLine1[j])
-          y1 = yLine1[j];
-
-        if (x1 == xLine1[j]) {    //ideally this is the actual number I want
-          y1 = yLine1[j];
-          continue;
-        }
-      }
-
-      for (j = 0; j < xLine2.length; j++) {   //Doing the same thing but for the second line
-        if (x1-5 == xLine2[j])  //if the x value isn't in the array, then it'll get close to it
-          y2 = yLine2[j];
-        if (x1-4 == xLine2[j])
-          y2 = yLine2[j];
-        if (x1-3 == xLine2[j])
-          y2 = yLine2[j];
-        if (x1-2 == xLine2[j])
-          y2 = yLine2[j];
-        if (x1-1 == xLine2[j])
-          y2 = yLine2[j];
-
-        if (x1 == xLine2[j]) {    //ideally this is the actual number I want
-          y2 = yLine2[j];
-          continue;
-        }
-      }
-
-
-
-      run("RGB Color");
-      setForegroundColor(0, 255, 0);
-      makeLine(x1, y1, x1, y2, 1);
-      if(drawMeasurementLines == true)
-        run("Draw");
-      lineLength = abs(y1 - y2);
-
-
-
-      mouseNumberArray = Array.concat(mouseNumberArray, mouseNumber);
-      eyeArray = Array.concat(eyeArray, eye);
-      locationArray = Array.concat(locationArray, location);
-      distanceFromOpticNerve = Array.concat(distanceFromOpticNerve, x1 - round(opticNerveLocation));
-      thickness = Array.concat(thickness, lineLength);
-    }
-
-
-    Mouse = mouseNumberArray;   //reporting the measurements
-    Eye = eyeArray;
-    Location = locationArray;
-    Distance_From_Optic_Nerve = distanceFromOpticNerve;
-    Thickness = thickness;
-    if (reportAllMeasurements == true) {      //checking if the user decided if they want all the measurement reported
-      Array.show("Results (row numbers)", Mouse, Eye, Location, Distance_From_Optic_Nerve, Thickness);
-    }
-
-    if (processTotalAverage == true) {      //checking if the user decided if they want the total average (see macro [1])
-      Array.getStatistics(thickness, ignore1, ignore2, averageThickness, ignore3);  //getting the average thickness for the image
-      averagedResultsMouseNumber = Array.concat(averagedResultsMouseNumber, Mouse[0]);  //these variables are for the averaged thickness table
-      averagedResultsEye = Array.concat(averagedResultsEye, Eye[0]);
-      averagedResultsLocation = Array.concat(averagedResultsLocation, Location[0]);
-      averagedResultsThickness = Array.concat(averagedResultsThickness, averageThickness);
-
-      Mouse = averagedResultsMouseNumber;   //reporting the measurements
-      Eye = averagedResultsEye;
-      Location = averagedResultsLocation;
-      Thickness = averagedResultsThickness;
-
-      Array.show("Averaged results (row numbers)", Mouse, Eye, Location, Thickness);
-    }
-
-
-
-
-    if (processSpidergraphData == true) {       //this section is if the user wants data processed for the spidergraphs.
-                                                //a lot of this section is a repeat of the above section.
-      x1 = round(opticNerveLocation);
-
-      spiderGraph_mouseNumberArray = newArray();
-      spiderGraph_eyeArray = newArray();
-      spiderGraph_locationArray = newArray();
-      spiderGraph_distanceFromOpticNerve = newArray();
-      spiderGraph_thickness = newArray();
-
-
-      for (i = 0; i < spiderGraphNumberOfLines; i++) {
-        if (opticNerveSide == "central" && i == spiderGraphNumberOfLines/2) {   //if this is a central image, halfway through it'll analyze the left side
-          x1 = round(opticNerveLocation);
-          spiderGraphLineDistance = -1 * abs(spiderGraphLineDistance);
-        }
-
-        x1 = x1 + spiderGraphLineDistance;
-        modifiedX1 = x1;
-
-        if (x1 > 640)   //If the line goes past the image, then it will record the edge of the image
-          modifiedX1 = 639;
-        if (x1 < 0)
-          modifiedX1 = 1;
-
-        for (j = 0; j < xLine1.length; j++) {
-          if (modifiedX1-5 == xLine1[j])  //if the x value isn't in the array, then it'll get close to it
-            y1 = yLine1[j];
-          if (modifiedX1-4 == xLine1[j])
-            y1 = yLine1[j];
-          if (modifiedX1-3 == xLine1[j])
-            y1 = yLine1[j];
-          if (modifiedX1-2 == xLine1[j])
-            y1 = yLine1[j];
-          if (modifiedX1-1 == xLine1[j])
-            y1 = yLine1[j];
-
-          if (modifiedX1 == xLine1[j]) {    //ideally this is the actual number I want
-            y1 = yLine1[j];
-            continue;
-          }
-        }
-
-        for (j = 0; j < xLine2.length; j++) {   //Doing the same thing but for the second line
-          if (modifiedX1-5 == xLine2[j])  //if the x value isn't in the array, then it'll get close to it
-            y2 = yLine2[j];
-          if (modifiedX1-4 == xLine2[j])
-            y2 = yLine2[j];
-          if (modifiedX1-3 == xLine2[j])
-            y2 = yLine2[j];
-          if (modifiedX1-2 == xLine2[j])
-            y2 = yLine2[j];
-          if (modifiedX1-1 == xLine2[j])
-            y2 = yLine2[j];
-
-          if (modifiedX1 == xLine2[j]) {    //ideally this is the actual number I want
-            y2 = yLine2[j];
-            continue;
-          }
-        }
-
-        if (modifiedX1 != x1) {
-          print("Error found when analyzing " + ID);
-          print("Measurement at " + x1-round(opticNerveLocation) + " is outside of the image. Measurement instead taken at " + modifiedX1-round(opticNerveLocation) + ".");
-        }
-
-
-        run("RGB Color");
-        setForegroundColor(255, 0, 0);    //making the lines red
-        makeLine(x1, y1, x1, y2, 1);
-        if(drawSpiderGraphLines == true)
-          run("Draw");
-        lineLength = abs(y1 - y2);
-
-
-
-        spiderGraph_mouseNumberArray = Array.concat(spiderGraph_mouseNumberArray, mouseNumber);
-        spiderGraph_eyeArray = Array.concat(spiderGraph_eyeArray, eye);
-        spiderGraph_locationArray = Array.concat(spiderGraph_locationArray, location);
-        spiderGraph_distanceFromOpticNerve = Array.concat(spiderGraph_distanceFromOpticNerve, x1 - round(opticNerveLocation));
-        spiderGraph_thickness = Array.concat(spiderGraph_thickness, lineLength);
-
-      }
-
-      //This next part just adds the 0 distance from optic nerve
-      if (location == "superior" || location == "nasal" || opticNerveSide == "central") {
-        spiderGraph_mouseNumberArray = Array.concat(spiderGraph_mouseNumberArray, mouseNumber);
-        spiderGraph_eyeArray = Array.concat(spiderGraph_eyeArray, eye);
-        spiderGraph_locationArray = Array.concat(spiderGraph_locationArray, location);
-        spiderGraph_distanceFromOpticNerve = Array.concat(spiderGraph_distanceFromOpticNerve, 0);
-        spiderGraph_thickness = Array.concat(spiderGraph_thickness, 0);
-      }
-
-      //This next part rearranges the data so that it can be directly pasted into Prism or whatever graphing software
-
-      if (opticNerveSide == "central") {
-        specificLocationArray = newArray();
-        if (spiderGraph_locationArray[0] == "vertical") {
-          for (i=0; i<spiderGraph_distanceFromOpticNerve.length; i++) {
-            if (spiderGraph_distanceFromOpticNerve[i] < 0)
-              specificLocationArray = Array.concat(specificLocationArray, "inferior");
-            if (spiderGraph_distanceFromOpticNerve[i] >= 0)
-              specificLocationArray = Array.concat(specificLocationArray, "superior");
-          }
-        }
-        if (spiderGraph_locationArray[0] == "horizontal") {
-          for (i=0; i<spiderGraph_distanceFromOpticNerve.length; i++) {
-            if (eye == "OS" && spiderGraph_distanceFromOpticNerve[i] != 0)
-              spiderGraph_distanceFromOpticNerve[i] = -1 * spiderGraph_distanceFromOpticNerve[i];   //this is making it so spiderGraph_distanceFromOpticNerve
-              //                                                                                      orients to the eye position (nasal/lateral), not image
-              //                                                                                      position (left/right of optic nerve)
-            if (spiderGraph_distanceFromOpticNerve[i] < 0)
-              specificLocationArray = Array.concat(specificLocationArray, "temporal");
-            if (spiderGraph_distanceFromOpticNerve[i] >= 0)
-              specificLocationArray = Array.concat(specificLocationArray, "nasal");
-          }
-        }
-        spiderGraph_locationArray = specificLocationArray;    //I just created that variable temporarily so I could redifine it for the central image sides
-      }
-
-      if (location == "nasal" || location == "temporal") {
-        if (eye == "OS") {
-          for (i = 0; i < spiderGraph_distanceFromOpticNerve.length; i++) {
-            if (spiderGraph_distanceFromOpticNerve[i] != 0)
-              spiderGraph_distanceFromOpticNerve[i] = -1 * spiderGraph_distanceFromOpticNerve[i];
-          }
-        }
-      }
-
-      Array.sort(spiderGraph_distanceFromOpticNerve, spiderGraph_mouseNumberArray, spiderGraph_eyeArray, spiderGraph_locationArray, spiderGraph_thickness);
-
-      mmDistanceFromOpticNerve = newArray();      //making another column that has the distance from optic nerve in microns
-      for (i=0; i<spiderGraph_distanceFromOpticNerve.length; i++) {
-        convertedValue = spiderGraph_distanceFromOpticNerve[i] * abs(pixelToMicronConversion)/1000;   //divide by 1000 to convert micron to mm
-        mmDistanceFromOpticNerve = Array.concat(mmDistanceFromOpticNerve, convertedValue);
-      }
-
-
-      Mouse = spiderGraph_mouseNumberArray;   //reporting the measurements
-      Eye = spiderGraph_eyeArray;
-      Location = spiderGraph_locationArray;
-      Pixels_From_Optic_Nerve = spiderGraph_distanceFromOpticNerve;
-      mm_From_Optic_Nerve = mmDistanceFromOpticNerve;
-      Thickness = spiderGraph_thickness;
-      Array.show("Spidergraph results (row numbers)", Mouse, Eye, Location, Pixels_From_Optic_Nerve, mm_From_Optic_Nerve, Thickness);
-
-    }
-
-
-    run("Select None");     //resetting everything for the next image
-    var xLineLocation = newArray("nothing");
-    var yLineLocation = newArray("nothing");
-    var xLine1 = newArray("nothing");
-    var yLine1 = newArray("nothing");
-    var xLine2 = newArray("nothing");
-    var yLine2 = newArray("nothing");
-  }
+	// ===============================================
+	// User submitting first line
+	// ===============================================
+	if (count == 0) {     //The first time you call up this macro
+		count = 1;
+		reportProgress();
+		Roi.getCoordinates(x, y);
+
+		xShortened = newArray();
+		yShortened = newArray();
+
+		// Getting rid of repeat x values
+		for (i = 0; i < x.length; i++) {
+		if (contains(xShortened, round(x[i])) == true) {
+			continue;
+		} else {
+			xShortened = Array.concat(xShortened, round(x[i]));
+			yShortened = Array.concat(yShortened, round(y[i]));
+		}
+		}
+
+		xComplete = newArray();
+		yComplete = newArray();
+
+		imageWidth = getWidth();
+		for (i = 0; i < imageWidth; i++) {
+		// Find the two surrounding points in xShortened
+		leftX = -1;
+		rightX = -1;
+		leftY = -1;
+		rightY = -1;
+
+		for (j = 0; j < xShortened.length - 1; j++) {
+			if (xShortened[j] <= i && xShortened[j+1] >= i) {
+			leftX = xShortened[j];
+			leftY = yShortened[j];
+			rightX = xShortened[j+1];
+			rightY = yShortened[j+1];
+			break;
+			}
+		}
+
+		if (i < xShortened[0]) {
+			// Left of all points
+			yComplete = Array.concat(yComplete, yShortened[0]);
+		
+		} else if (i > xShortened[xShortened.length - 1]) {
+			// Right of all points
+			last = xShortened.length - 1;
+			yComplete = Array.concat(yComplete, yShortened[last]);
+		
+		} else if (leftX != -1) {
+			// Interpolate
+			yInterp = leftY + (i - leftX) * (rightY - leftY) / (rightX - leftX);
+			yComplete = Array.concat(yComplete, round(yInterp));
+		}
+
+		xComplete = Array.concat(xComplete, i);
+		}
+
+		xLine1 = xComplete;    //Applying it to the global variable
+		yLine1 = yComplete;
+
+		if(drawMeasurementLines == true) {    //Making a permanent line on image, if selected
+			run("RGB Color");
+			setForegroundColor(0, 255, 0);
+			run("Draw");
+		}
+
+		run("Select None");     //removing the ROI line
+		var xLineLocation = newArray("nothing");
+		var yLineLocation = newArray("nothing");
+
+		exit();
+	}
+
+
+	// ===============================================
+	// User submitting second line
+	// ===============================================
+	if (count == 1) {     //The second time you call up this macro
+		count = 2;
+		reportProgress();
+		Roi.getCoordinates(x, y);
+	
+		xShortened = newArray();
+		yShortened = newArray();
+	
+		// Getting rid of repeat x values
+		for (i = 0; i < x.length; i++) {    
+		  if (contains(xShortened, round(x[i])) == true) {
+			continue;
+		  } else {
+			xShortened = Array.concat(xShortened, round(x[i]));
+			yShortened = Array.concat(yShortened, round(y[i]));
+		  }
+		}
+	
+		xComplete = newArray();
+		yComplete = newArray();
+	
+		imageWidth = getWidth();
+		for (i = 0; i < imageWidth; i++) {
+			// Find the two surrounding points in xShortened
+			leftX = -1;
+			rightX = -1;
+			leftY = -1;
+			rightY = -1;
+	  
+			for (j = 0; j < xShortened.length - 1; j++) {
+			  if (xShortened[j] <= i && xShortened[j+1] >= i) {
+				leftX = xShortened[j];
+				leftY = yShortened[j];
+				rightX = xShortened[j+1];
+				rightY = yShortened[j+1];
+				break;
+			  }
+			}
+	  
+			if (i < xShortened[0]) {
+				// Left of all points
+				yComplete = Array.concat(yComplete, yShortened[0]);
+			
+			} else if (i > xShortened[xShortened.length - 1]) {
+				// Right of all points
+				last = xShortened.length - 1;
+				yComplete = Array.concat(yComplete, yShortened[last]);
+			
+			} else if (leftX != -1) {
+				// Interpolate
+				yInterp = leftY + (i - leftX) * (rightY - leftY) / (rightX - leftX);
+				yComplete = Array.concat(yComplete, round(yInterp));
+			}
+	  
+			xComplete = Array.concat(xComplete, i);
+		  }
+	
+		xLine2 = xComplete;    //Applying it to the global variable
+		yLine2 = yComplete;
+	
+		if(drawMeasurementLines == true) {
+			run("RGB Color");   //making a line where you put it
+			setForegroundColor(0, 255, 0);
+			run("Draw");
+		}
+	
+		run("Select None");     //removing the line
+		var xLineLocation = newArray("nothing");
+		var yLineLocation = newArray("nothing");
+	  
+		// Coding test to print all the detected points
+		test = false;
+		if (test == true) {
+			xPoints = xLine1;
+			y1Points = yLine1;
+			y2Points = yLine2;
+			distanceBetweenPoints = newArray();
+			for (i = 0; i < xPoints.length; i++) {
+				calculatedDifference = y2Points[i] - y1Points[i];
+				distanceBetweenPoints = Array.concat(distanceBetweenPoints, calculatedDifference);
+			}
+			Array.show("Points", xPoints, y1Points, y2Points, distanceBetweenPoints);
+		}
+
+		exit();
+	}
+
+
+	// ================================================
+	// Measuring distance between both submitted lines
+	// ================================================
+	if (count == 2) {   //The third time this macro is called
+		count = 3;
+		reportProgress();
+
+		count = 0;
+		Roi.getCoordinates(x, y);
+		opticNerveLocation = round(x[0]);
+		x1 = opticNerveLocation;
+
+		run("RGB Color");
+		setForegroundColor(0, 255, 0);
+
+		distanceFromOpticNerve = newArray();
+		thickness = newArray();
+
+		// Determining points to measure
+		xPointsToMeasure = newArray();
+
+		// Skipping left or right side if optic nerve is close to the edge
+		skipLeftSide = false;
+		skipRightSide = false;
+		opticNerveLocationProportion = opticNerveLocation / getWidth();
+		if (opticNerveLocationProportion < 0.25 && forceMeasureBothSides == false) {
+			skipLeftSide = true;
+		} else if (opticNerveLocationProportion > 0.75 && forceMeasureBothSides == false) {
+			skipRightSide = true;
+		}
+		if (forceMeasureBothSides == true) {
+			skipLeftSide = false;
+			skipRightSide = false;
+		}
+
+		// Grabbing x values left of optic nerve
+		xLeft = opticNerveLocation - boundaryAroundOpticNerve;
+		while (xLeft >= 0 && skipLeftSide == false) {
+			xPointsToMeasure = Array.concat(xPointsToMeasure, xLeft);
+			xLeft -= distanceBetweenLines;
+		}
+
+		// Grabbing x values right of optic nerve
+		xRight = opticNerveLocation + boundaryAroundOpticNerve;
+		while (xRight < getWidth() && skipRightSide == false) {
+			xPointsToMeasure = Array.concat(xPointsToMeasure, xRight);
+			xRight += distanceBetweenLines;
+		}
+
+		Array.sort(xPointsToMeasure);
+
+		// Measuring the points
+		for (j=0; j<xPointsToMeasure.length; j++) {
+			x_point = xPointsToMeasure[j];
+
+			y1 = yLine1[x_point];
+			y2 = yLine2[x_point];
+		
+			makeLine(x_point, y1, x_point, y2);
+		
+			if (drawMeasurementLines)
+				run("Draw");
+		
+			lineLength = abs(y1 - y2);
+		
+			distanceFromOpticNerve = Array.concat(
+				distanceFromOpticNerve,
+				round(x_point - opticNerveLocation)
+			);
+		
+			thickness = Array.concat(thickness, lineLength);
+		}
+
+		// =================================
+		// Spidergraph processing
+		// =================================
+		if (processSpidergraphData == true) {
+			spiderGraph_distanceFromOpticNerve = newArray();
+			spiderGraph_thickness = newArray();
+		
+			// Determining points to measure
+			xPointsToMeasure = newArray();
+		
+			// Grabbing x values left of optic nerve
+			startingPoint = maxOf(boundaryAroundOpticNerve, spiderGraphLineDistance);
+			xLeft = opticNerveLocation - startingPoint;
+			while (xLeft >= 0 && skipLeftSide == false) {
+				xPointsToMeasure = Array.concat(xPointsToMeasure, xLeft);
+				xLeft -= spiderGraphLineDistance;
+			}
+		
+			// Grabbing x values right of optic nerve
+			xRight = opticNerveLocation + startingPoint;
+			while (xRight < getWidth() && skipRightSide == false) {
+				xPointsToMeasure = Array.concat(xPointsToMeasure, xRight);
+				xRight += spiderGraphLineDistance;
+			}
+		
+			Array.sort(xPointsToMeasure);
+		
+			// Measuring the points
+			for (j=0; j<xPointsToMeasure.length; j++) {
+				x_point = xPointsToMeasure[j];
+		
+				y1 = yLine1[x_point];
+				y2 = yLine2[x_point];
+			
+				makeLine(x_point, y1, x_point, y2);
+
+				run("RGB Color");
+				setForegroundColor(255, 0, 0);    //making the lines red
+				if(drawSpiderGraphLines == true)
+				run("Draw");
+
+				lineLength = abs(y1 - y2);
+			
+				spiderGraph_distanceFromOpticNerve = Array.concat(
+					spiderGraph_distanceFromOpticNerve,
+					round(x_point - opticNerveLocation)
+				);
+			
+				spiderGraph_thickness = Array.concat(spiderGraph_thickness, lineLength);
+			}
+		}
+	
+
+		// =================================
+		// Reporting data
+		// =================================
+		// Getting info on the image
+		ID = getTitle();
+		lowerID = toLowerCase(ID);
+
+		// Determining eye
+		if (indexOf(lowerID, "od") >= 0)
+			eye = "OD";
+		else if (indexOf(lowerID, "os") >=0)
+			eye = "OS";
+		else
+			eye = "unknown";
+		
+		// Determining ID, which should be the beginning of the title right before _OD or _OS
+		index = indexOf(lowerID, "_o");
+		if (index > 0)
+			idNumber = substring(ID, 0, index);
+		else
+			idNumber = ID;
+
+		// Determining orientation
+		if (indexOf(ID, "horizontal")>=0 || indexOf(ID, "temporal")>=0 || indexOf(ID, "nasal")>=0)
+			orientation = "horizontal";
+		else if (indexOf(ID, "vertical")>=0 || indexOf(ID, "inferior")>=0 || indexOf(ID, "superior")>=0)
+			orientation = "vertical";
+		else
+			orientation = "unknown";
+
+
+		// Give table of all measurements
+		if (reportAllMeasurements == true) {
+			if (!isOpen("Measurements")) {
+				Table.create("Measurements");
+				Table.setLocationAndSize(100, 100, 600, 800, "Measurements");
+			}
+
+			row = Table.size("Measurements");
+
+			for (i = 0; i < distanceFromOpticNerve.length; i++) {
+				Table.set("ID", row+i, idNumber);
+				Table.set("Eye", row+i, eye);
+				Table.set("Orientation", row+i, orientation);
+				Table.set("Distance from optic nerve", row+i, distanceFromOpticNerve[i]);
+				Table.set("Thickness", row+i, thickness[i]);
+			}
+			Table.update("Measurements");
+		}
+
+		// Give table of averaged thickness
+		if (processTotalAverage == true) {
+			Array.getStatistics(thickness, _, _, averageThickness, _);
+			
+			if (!isOpen("Averaged measurements")) {
+				Table.create("Averaged measurements");
+				Table.setLocationAndSize(700, 500, 400, 400, "Averaged measurements");
+			}
+
+			row = Table.size("Averaged measurements");
+			
+			Table.update("Averaged measurements");
+			Table.set("ID", row, idNumber);
+			Table.set("Eye", row, eye);
+			Table.set("Orientation", row, orientation);
+			Table.set("Thickness", row, averageThickness);
+			Table.update("Averaged measurements");
+		}
+
+		// Give table of spidergraph measurements
+		if (processSpidergraphData == true) {
+			if (reverseSpiderGraph == true) {
+				for (i = 0; i < spiderGraph_distanceFromOpticNerve.length; i++)
+					spiderGraph_distanceFromOpticNerve[i] = -1 * spiderGraph_distanceFromOpticNerve[i];
+			}
+			
+			// Adding the 0 thickness measurement at the optic nerve
+			spiderGraph_distanceFromOpticNerve = Array.concat(spiderGraph_distanceFromOpticNerve, 0);
+			spiderGraph_thickness = Array.concat(spiderGraph_thickness, 0);
+
+			Array.sort(spiderGraph_distanceFromOpticNerve, spiderGraph_thickness);
+
+			if (!isOpen("Spidergraph measurements")) {
+				Table.create("Spidergraph measurements");
+				Table.setLocationAndSize(700, 100, 700, 400, "Spidergraph measurements");
+			}
+
+			row = Table.size("Spidergraph measurements");
+			Table.update("Spidergraph measurements");
+
+			for (i = 0; i < spiderGraph_distanceFromOpticNerve.length; i++) {
+				Table.set("ID", row+i, idNumber);
+				Table.set("Eye", row+i, eye);
+				Table.set("Orientation", row+i, orientation);
+				Table.set("Distance from ON (px)", row+i, spiderGraph_distanceFromOpticNerve[i]);
+				Table.set("Distance from ON (µm)", row+i, 
+					round(spiderGraph_distanceFromOpticNerve[i] * pixelToMicronConversion));
+				Table.set("Thickness", row+i, round(spiderGraph_thickness[i]));
+			}
+			Table.update("Spidergraph measurements");
+		}
+
+
+		// =========================================
+		// Resetting measurements for the next image
+		// =========================================
+		run("Select None");
+		var xLineLocation = newArray("nothing");
+		var yLineLocation = newArray("nothing");
+		var xLine1 = newArray("nothing");
+		var yLine1 = newArray("nothing");
+		var yLine2 = newArray("nothing");
+	}
 }
 
 
-
+// =================================
+// Open the next image in the folder
+// =================================
 macro "Open next [d]" {
-  if (saveLinesWhenOpenNewImage == true) {
-    run("Save");
-  }
+	getLocationAndSize(x, y, width, height);
+	if (saveLinesWhenOpenNewImage == true) {
+		run("Save");
+	}
 	run("Open Next");
-}
-
-macro "Reset lines [8]" {
-  run("Select None");
-  var xLineLocation = newArray("nothing");
-  var yLineLocation = newArray("nothing");
-  var xLine1 = newArray("nothing");
-  var yLine1 = newArray("nothing");
-  var xLine2 = newArray("nothing");
-  var yLine2 = newArray("nothing");
-
-  count = 0;
-}
-
-
-macro "Reset tables [9]" {
-  var mouseNumberArray = newArray();
-  var eyeArray = newArray();
-  var locationArray = newArray();
-  var distanceFromOpticNerve = newArray();
-  var thickness = newArray();
-
-  var averagedResultsMouseNumber = newArray();  //these variables are for the averaged thickness table
-  var averagedResultsEye = newArray();
-  var averagedResultsLocation = newArray();
-  var averagedResultsThickness = newArray();
-}
-
-macro "Delete specific line in averaged table [0]" {
-  Dialog.create("Delete line");
-  Dialog.addMessage("What line do you want deleted?");
-  Dialog.addNumber("Line number: ", 1);
-
-  Dialog.show();
-
-  deleteThisLine = Dialog.getNumber() - 1;    //Subtracting by one because the line number starts at 1 but the array starts at 0
-
-  averagedResultsMouseNumber = Array.deleteIndex(averagedResultsMouseNumber, deleteThisLine);
-  averagedResultsEye = Array.deleteIndex(averagedResultsEye, deleteThisLine);
-  averagedResultsLocation = Array.deleteIndex(averagedResultsLocation, deleteThisLine);
-  averagedResultsThickness = Array.deleteIndex(averagedResultsThickness, deleteThisLine);
-  Array.show("Averaged results (row numbers)", averagedResultsMouseNumber, averagedResultsEye, averagedResultsLocation, averagedResultsThickness);
+	setLocation(x, y, width, height);
+	reportProgress();
 }
