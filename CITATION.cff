@@ -5,7 +5,7 @@ authors:
   given-names: "Brandon"
   orcid: "https://orcid.org/0000-0001-6502-9216"
 title: "Semiautomated OCT thickness analysis"
-version: 2.2
-doi: "10.5281/zenodo.14947742"
-date-released: 2023-03-23
+version: 2.3
+doi: "10.5281/zenodo.22150403"
+date-released: 2026-08-28
 url: "https://github.com/banderson314/OCT_thickness_analysis"
