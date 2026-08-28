@@ -39,7 +39,7 @@ macro "AutoRunAndHide" {
 	doCommand("Set parameters [1]");
 	print("\\Clear");
 	print("Welcome to OCT_image_thickness.ijm!");
-	print("\nIf you use this macro to publish data, please cite it:\nAnderson, B. (2023). Semiautomated OCT thickness analysis (Version 2.2) [Computer software]. https://doi.org/10.5281/zenodo.14947742");
+	print("\nIf you use this macro to publish data, please cite it:\nAnderson, B. (2023). Semiautomated OCT thickness analysis (Version 2.3) [Computer software]. https://doi.org/10.5281/zenodo.14947742");
 	
 	print("\\Update6:To get started, use the line tool to mark the first border of interest.")
 	print("\\Update8:CONTROLS");
